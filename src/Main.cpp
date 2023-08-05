@@ -34,6 +34,14 @@ using namespace ramulator;
 
 bool ramulator::warmup_complete = false;
 
+class DRAMFactory {
+public:
+    template <typename T>
+    static T* createDRAM(Config& configs) {
+        return new T(configs["org"], configs["speed"]);
+    }
+};
+
 template<typename T>
 void run_dramtrace(const Config& configs, Memory<T, Controller>& memory, const char* tracename) {
 
@@ -221,55 +229,41 @@ int main(int argc, const char *argv[])
     std::vector<const char*> files(&argv[trace_start], &argv[argc]);
     configs.set_core_num(argc - trace_start);
 
+    DRAMBase* dram;
     if (standard == "DDR3") {
-      DDR3* ddr3 = new DDR3(configs["org"], configs["speed"]);
-      start_run(configs, ddr3, files);
+        dram = DRAMFactory::createDRAM<DDR3>(configs);
     } else if (standard == "DDR4") {
-      DDR4* ddr4 = new DDR4(configs["org"], configs["speed"]);
-      start_run(configs, ddr4, files);
+        dram = DRAMFactory::createDRAM<DDR4>(configs);
     } else if (standard == "SALP-MASA") {
-      SALP* salp8 = new SALP(configs["org"], configs["speed"], "SALP-MASA", configs.get_subarrays());
-      start_run(configs, salp8, files);
+        dram = DRAMFactory::createDRAM<SALP>(configs);
     } else if (standard == "LPDDR3") {
-      LPDDR3* lpddr3 = new LPDDR3(configs["org"], configs["speed"]);
-      start_run(configs, lpddr3, files);
+        dram = DRAMFactory::createDRAM<LPDDR3>(configs);
     } else if (standard == "LPDDR4") {
-      // total cap: 2GB, 1/2 of others
-      LPDDR4* lpddr4 = new LPDDR4(configs["org"], configs["speed"]);
-      start_run(configs, lpddr4, files);
+        // total cap: 2GB, 1/2 of others
+        dram = DRAMFactory::createDRAM<LPDDR4>(configs);
     } else if (standard == "GDDR5") {
-      GDDR5* gddr5 = new GDDR5(configs["org"], configs["speed"]);
-      start_run(configs, gddr5, files);
+        dram = DRAMFactory::createDRAM<GDDR5>(configs);
     } else if (standard == "HBM") {
-      HBM* hbm = new HBM(configs["org"], configs["speed"]);
-      start_run(configs, hbm, files);
+        dram = DRAMFactory::createDRAM<HBM>(configs);
     } else if (standard == "WideIO") {
-      // total cap: 1GB, 1/4 of others
-      WideIO* wio = new WideIO(configs["org"], configs["speed"]);
-      start_run(configs, wio, files);
+        // total cap: 1GB, 1/4 of others
+        dram = DRAMFactory::createDRAM<WideIO>(configs);
     } else if (standard == "WideIO2") {
-      // total cap: 2GB, 1/2 of others
-      WideIO2* wio2 = new WideIO2(configs["org"], configs["speed"], configs.get_channels());
-      wio2->channel_width *= 2;
-      start_run(configs, wio2, files);
+        // total cap: 2GB, 1/2 of others
+        dram = DRAMFactory::createDRAM<WideIO2>(configs);
     } else if (standard == "STTMRAM") {
-      STTMRAM* sttmram = new STTMRAM(configs["org"], configs["speed"]);
-      start_run(configs, sttmram, files);
+        dram = DRAMFactory::createDRAM<STTMRAM>(configs);
     } else if (standard == "PCM") {
-      PCM* pcm = new PCM(configs["org"], configs["speed"]);
-      start_run(configs, pcm, files);
-    }
+        dram = DRAMFactory::createDRAM<PCM>(configs);
     // Various refresh mechanisms
-      else if (standard == "DSARP") {
-      DSARP* dsddr3_dsarp = new DSARP(configs["org"], configs["speed"], DSARP::Type::DSARP, configs.get_subarrays());
-      start_run(configs, dsddr3_dsarp, files);
+    } else if (standard == "DSARP") {
+        dram = DRAMFactory::createDRAM<DSARP>(configs);
     } else if (standard == "ALDRAM") {
-      ALDRAM* aldram = new ALDRAM(configs["org"], configs["speed"]);
-      start_run(configs, aldram, files);
+        dram = DRAMFactory::createDRAM<ALDRAM>(configs);
     } else if (standard == "TLDRAM") {
-      TLDRAM* tldram = new TLDRAM(configs["org"], configs["speed"], configs.get_subarrays());
-      start_run(configs, tldram, files);
+        dram = DRAMFactory::createDRAM<TLDRAM>(configs);
     }
+    start_run(configs, dram, files);
 
     printf("Simulation done. Statistics written to %s\n", stats_out.c_str());
 
